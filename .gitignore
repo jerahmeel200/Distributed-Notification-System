@@ -51,5 +51,5 @@ logs/
 Thumbs.db
 
 # FCM Service Account (contains sensitive credentials)
-fcm-service-account.json
+notification-service-d10e6-c3b98cba24f9.json
 *-service-account.json
