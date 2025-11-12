@@ -86,11 +86,22 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 👇 Use the v2 Compose plugin command (built-in)
+      # 👇 Create Firebase service account JSON file dynamically
+      - name: Create Firebase service account key
+        run: |
+          echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > fcm-service-account.json
+        shell: bash
+
       - name: Build Docker images
+        env:
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
         run: docker compose build
       
       - name: Test Docker images
+        env:
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
         run: |
           docker compose up -d
           sleep 30
@@ -112,5 +123,4 @@ jobs:
       - name: Deploy to server
         run: |
           echo "Deployment would happen here"
-          echo "Use /request-server command to get server details"
-          # Add your deployment script here
+          # Example: ssh, rsync, or cloud provider CLI commands
