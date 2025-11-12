@@ -1,0 +1,90 @@
+# System Architecture Diagram Description
+
+Use this description to create a visual diagram in Draw.io, Miro, or Lucidchart.
+
+## Components Layout
+
+### Top Layer - Client
+- [Client Application] → HTTP Request → [API Gateway:8000]
+
+### Middle Layer - API Gateway
+[API Gateway:8000]
+  - Validates & Authenticates
+  - Routes to Queues
+  - Tracks Status
+  - Idempotency Check (Redis)
+
+### Message Queue Layer
+[RabbitMQ]
+  Exchange: notifications.direct
+    ├── email.queue → [Email Service:8002]
+    ├── push.queue → [Push Service:8003]
+    └── failed.queue (Dead Letter Queue)
+
+### Service Layer
+
+[User Service:8001]
+  └── PostgreSQL (user_db)
+    - User Management
+    - Authentication
+    - Preferences
+
+[Template Service:8004]
+  └── PostgreSQL (template_db)
+    - Template Storage
+    - Variable Substitution
+
+[Email Service:8002]
+  ├── Consumes from email.queue
+  ├── Calls Template Service (REST)
+  ├── Calls User Service (REST)
+  └── Sends via SendGrid/SMTP
+
+[Push Service:8003]
+  ├── Consumes from push.queue
+  ├── Calls Template Service (REST)
+  ├── Calls User Service (REST)
+  └── Sends via FCM
+
+### Data Layer
+[PostgreSQL]
+  ├── user_db (User Service)
+  └── template_db (Template Service)
+
+[Redis]
+  - Caching
+  - Idempotency
+  - Rate Limiting
+
+## Flow Diagram
+
+1. Client → API Gateway (POST /notifications)
+2. API Gateway validates & publishes to RabbitMQ
+3. Email/Push Service consumes message
+4. Service fetches template (REST → Template Service)
+5. Service fetches user data (REST → User Service)
+6. Service renders template
+7. Service sends notification
+8. Service updates status (REST → API Gateway)
+9. Client checks status (GET /notifications/{id}/status)
+
+## Failure Handling Flow
+
+Failed Message:
+  → Retry (up to 3 times with exponential backoff)
+  → If still fails → Dead Letter Queue
+  → Manual review/reprocessing
+
+Circuit Breaker:
+  - Service failure threshold: 5
+  - Recovery timeout: 60s
+  - States: CLOSED → OPEN → HALF_OPEN
+
+## Scaling Plan
+
+All services are horizontally scalable:
+- Multiple API Gateway instances behind load balancer
+- Multiple Email/Push Service instances consuming from same queues
+- Database read replicas for read-heavy operations
+- Redis cluster for high availability
+
