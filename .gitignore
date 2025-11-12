@@ -51,6 +51,6 @@ logs/
 Thumbs.db
 
 # FCM Service Account (contains sensitive credentials)
- 
+notification-service-d10e6-c3b98cba24f9.json
 *-service-account.json
- 
+echo "notification-service-d10e6-c3b98cba24f9.json" >> .gitignore
