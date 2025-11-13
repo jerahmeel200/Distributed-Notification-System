@@ -127,6 +127,42 @@ services:
       timeout: 10s
       retries: 3
 
+  # Email Service
+  email_service:
+    build:
+      context: .
+      dockerfile: ./services/email_service/Dockerfile
+    container_name: notification_email_service
+    ports:
+      - "${EMAIL_SERVICE_PORT:-8002}:8000"
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      REDIS_URL: redis://redis:6379/2
+      TEMPLATE_SERVICE_URL: http://template_service:8000
+      USER_SERVICE_URL: http://user_service:8000
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@example.com}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      template_service:
+        condition: service_healthy
+      user_service:
+        condition: service_healthy
+    networks:
+      - notification_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Push Service
   push_service:
     build:
