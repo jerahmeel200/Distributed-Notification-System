@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   # RabbitMQ
   rabbitmq:
@@ -161,7 +163,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Push Service
+  # Push Service (needs Firebase JSON)
   push_service:
     build:
       context: .
@@ -176,10 +178,8 @@ services:
       USER_SERVICE_URL: http://user_service:8000
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
       FCM_SERVICE_ACCOUNT_PATH: ${FCM_SERVICE_ACCOUNT_PATH:-/app/notification-service-d10e6-c3b98cba24f9.json}
-      FCM_SERVICE_ACCOUNT_JSON: ${FCM_SERVICE_ACCOUNT_JSON:-}
-      FCM_SERVER_KEY: ${FCM_SERVER_KEY:-}
     volumes:
-      # Mount FCM service account file (if using volume mount instead of copying)
+      # Mount the Firebase JSON (in CI, we create it dynamically)
       - ./notification-service-d10e6-c3b98cba24f9.json:/app/notification-service-d10e6-c3b98cba24f9.json:ro
     depends_on:
       rabbitmq:
@@ -241,4 +241,3 @@ volumes:
 networks:
   notification_network:
     driver: bridge
-
