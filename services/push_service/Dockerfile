@@ -17,8 +17,8 @@ COPY services/push_service /app
 # Copy shared utilities
 COPY shared /app/shared
 
-# ⚠️ REMOVE this line
-# COPY notification-service-d10e6-c3b98cba24f9.json /app/notification-service-d10e6-c3b98cba24f9.json
+# ⚠️ DO NOT COPY Firebase JSON here
+# It will be mounted at runtime via docker-compose
 
 EXPOSE 8000
 

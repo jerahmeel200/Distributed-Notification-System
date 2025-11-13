@@ -21,6 +21,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
       
       rabbitmq:
         image: rabbitmq:3-management-alpine
@@ -29,6 +31,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5672:5672
       
       redis:
         image: redis:7-alpine
@@ -37,6 +41,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v3
@@ -83,55 +89,24 @@ jobs:
       # 👇 Create Firebase service account JSON file dynamically
       - name: Create Firebase service account key
         run: |
-          echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > fcm-service-account.json
+          echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > notification-service-d10e6-c3b98cba24f9.json
         shell: bash
 
-      # 👇 Override host ports in CI to prevent conflicts
-      - name: Set environment variables for CI
-        run: echo "Overriding ports to avoid conflicts in CI"
-        env:
-          POSTGRES_USER_PORT: ""
-          POSTGRES_TEMPLATE_PORT: ""
-          REDIS_PORT: ""
-          USER_SERVICE_PORT: ""
-          PUSH_SERVICE_PORT: ""
-          TEMPLATE_SERVICE_PORT: ""
-          API_GATEWAY_PORT: ""
-
       - name: Build Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
-          POSTGRES_USER_PORT: ""
-          POSTGRES_TEMPLATE_PORT: ""
-          REDIS_PORT: ""
-          USER_SERVICE_PORT: ""
-          PUSH_SERVICE_PORT: ""
-          TEMPLATE_SERVICE_PORT: ""
-          API_GATEWAY_PORT: ""
         run: docker compose build
-      
+
       - name: Test Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
-          POSTGRES_USER_PORT: ""
-          POSTGRES_TEMPLATE_PORT: ""
-          REDIS_PORT: ""
-          USER_SERVICE_PORT: ""
-          PUSH_SERVICE_PORT: ""
-          TEMPLATE_SERVICE_PORT: ""
-          API_GATEWAY_PORT: ""
         run: |
           docker compose up -d
           sleep 30
-          # Use service names internally
-          curl -f http://api_gateway:8000/health || exit 1
-          curl -f http://user_service:8000/health || exit 1
-          curl -f http://email_service:8000/health || exit 1
-          curl -f http://push_service:8000/health || exit 1
-          curl -f http://template_service:8000/health || exit 1
+          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8001/health || exit 1
+          curl -f http://localhost:8002/health || exit 1
+          curl -f http://localhost:8003/health || exit 1
+          curl -f http://localhost:8004/health || exit 1
           docker compose down
+        env:
+          FCM_SERVICE_ACCOUNT_PATH: notification-service-d10e6-c3b98cba24f9.json
 
   deploy:
     needs: build

@@ -134,16 +134,17 @@ services:
       dockerfile: ./services/push_service/Dockerfile
     container_name: notification_push_service
     ports:
-      - "${PUSH_SERVICE_PORT:-8003}:8000"
+      - "8003:8000"
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       REDIS_URL: redis://redis:6379/3
       TEMPLATE_SERVICE_URL: http://template_service:8000
       USER_SERVICE_URL: http://user_service:8000
       FCM_PROJECT_ID: ${FCM_PROJECT_ID:-}
-      FCM_SERVICE_ACCOUNT_PATH: ${FCM_SERVICE_ACCOUNT_PATH:-/app/fcm-service-account.json}
+      FCM_SERVICE_ACCOUNT_PATH: /app/notification-service-d10e6-c3b98cba24f9.json
     volumes:
-      - ./notification-service-d10e6-c3b98cba24f9.json:/app/fcm-service-account.json:ro
+      # Mount Firebase JSON (locally and in CI)
+      - ./notification-service-d10e6-c3b98cba24f9.json:/app/notification-service-d10e6-c3b98cba24f9.json:ro
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -160,6 +161,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
 
   # API Gateway
   api_gateway:
