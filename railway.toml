@@ -1,12 +1,16 @@
 # Railway Configuration
-# This file configures Railway deployment settings
+# Note: Railway doesn't natively support docker-compose.yml
+# For docker-compose deployments, use Railway's GitHub integration
+# or deploy services individually
 
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+# This configuration is for individual service deployment
+# To deploy the API Gateway:
+# [build]
+# builder = "DOCKERFILE"
+# dockerfilePath = "services/api_gateway/Dockerfile"
 
-[deploy]
-startCommand = "docker compose up -d"
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+# [deploy]
+# startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+# restartPolicyType = "ON_FAILURE"
+# restartPolicyMaxRetries = 10
 

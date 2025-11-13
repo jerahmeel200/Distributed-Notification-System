@@ -211,8 +211,18 @@ jobs:
           
           # Deploy to Railway
           echo "🚀 Deploying to Railway..."
+          echo "ℹ️  Note: Railway doesn't support docker-compose.yml directly"
+          echo "ℹ️  Using Railway's GitHub integration is recommended for docker-compose"
+          echo "ℹ️  Or deploy services individually"
+          
+          # Try to deploy (Railway will use GitHub integration if configured)
           railway up --detach || {
-            echo "❌ Error: Deployment failed"
+            echo "⚠️  Railway CLI deployment failed"
+            echo "💡 Recommendation: Use Railway's GitHub integration instead:"
+            echo "   1. Go to Railway Dashboard → New Project"
+            echo "   2. Select 'Deploy from GitHub repo'"
+            echo "   3. Choose this repository"
+            echo "   4. Railway will auto-detect docker-compose.yml"
             exit 1
           }
           
