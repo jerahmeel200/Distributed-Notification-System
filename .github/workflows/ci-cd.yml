@@ -130,103 +130,14 @@ jobs:
           
           docker compose down
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Create Firebase service account key
-        run: |
-          if [ -z "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" ]; then
-            echo "{}" > notification-service-d10e6-c3b98cba24f9.json
-            echo "Warning: FCM_SERVICE_ACCOUNT_JSON secret not set. Using empty JSON file."
-          else
-            echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > notification-service-d10e6-c3b98cba24f9.json
-          fi
-        shell: bash
-      
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-      
-      - name: Install Railway CLI
-        run: |
-          npm install -g @railway/cli
-      
-      - name: Deploy to Railway
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: notification-service-d10e6-c3b98cba24f9.json
-        run: |
-          # Railway CLI automatically uses RAILWAY_TOKEN from environment
-          # Verify token is set
-          if [ -z "$RAILWAY_TOKEN" ]; then
-            echo "❌ Error: RAILWAY_TOKEN secret is not set!"
-            exit 1
-          fi
-          
-          # Link to existing Railway project
-          if [ -n "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
-            echo "🔗 Linking to existing Railway project: ${{ secrets.RAILWAY_PROJECT_ID }}"
-            railway link ${{ secrets.RAILWAY_PROJECT_ID }} || {
-              echo "⚠️  Failed to link to project. Creating new project..."
-              railway init --name "notification-system" --yes || exit 1
-            }
-          else
-            echo "⚠️  RAILWAY_PROJECT_ID not set."
-            echo "📝 Creating new Railway project..."
-            # Check if .railway directory exists (from local init)
-            if [ -d ".railway" ]; then
-              echo "✅ Found .railway directory, using existing project"
-              railway link || railway status || {
-                echo "❌ Error: Could not link to Railway project"
-                echo "💡 Solution: Run 'railway init' locally and commit the .railway directory"
-                exit 1
-              }
-            else
-              echo "❌ Error: No .railway directory found and RAILWAY_PROJECT_ID not set"
-              echo "💡 Solution 1: Set RAILWAY_PROJECT_ID secret with your project ID"
-              echo "💡 Solution 2: Run 'railway init' locally and commit the .railway directory"
-              exit 1
-            fi
-          fi
-          
-          # Verify we're linked to a project
-          echo "🔍 Verifying Railway project connection..."
-          railway status || {
-            echo "❌ Error: Not connected to a Railway project"
-            exit 1
-          }
-          
-          # Set environment variables in Railway (project-level)
-          if [ -n "$FCM_PROJECT_ID" ]; then
-            echo "🔧 Setting FCM_PROJECT_ID environment variable..."
-            railway variables set FCM_PROJECT_ID="$FCM_PROJECT_ID" || echo "⚠️  Could not set FCM_PROJECT_ID variable"
-          fi
-          
-          # Deploy to Railway
-          echo "🚀 Deploying to Railway..."
-          echo "ℹ️  Note: Railway doesn't support docker-compose.yml directly"
-          echo "ℹ️  Using Railway's GitHub integration is recommended for docker-compose"
-          echo "ℹ️  Or deploy services individually"
-          
-          # Try to deploy (Railway will use GitHub integration if configured)
-          railway up --detach || {
-            echo "⚠️  Railway CLI deployment failed"
-            echo "💡 Recommendation: Use Railway's GitHub integration instead:"
-            echo "   1. Go to Railway Dashboard → New Project"
-            echo "   2. Select 'Deploy from GitHub repo'"
-            echo "   3. Choose this repository"
-            echo "   4. Railway will auto-detect docker-compose.yml"
-            exit 1
-          }
-          
-          echo "✅ Deployment to Railway completed!"
-          echo "📊 Check your Railway dashboard for deployment status: https://railway.app"
-          echo "🔗 Service URLs will be available in the Railway dashboard after deployment"
+  # Note: Deployment is handled by Railway's GitHub Integration
+  # After setting up Railway GitHub integration, deployments happen automatically
+  # on every push to main branch. No GitHub Actions deployment step needed.
+  
+  # To set up Railway GitHub Integration:
+  # 1. Go to railway.app → New Project
+  # 2. Select "Deploy from GitHub repo"
+  # 3. Choose this repository
+  # 4. Railway will auto-detect docker-compose.yml and deploy all services
+  # 5. Configure environment variables in Railway dashboard
 
