@@ -138,10 +138,49 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Deploy to server
+      - name: Create Firebase service account key
         run: |
-          echo "Deployment would happen here"
-          echo "Use /request-server command to get server details"
-          # Add your deployment script here
-          # Example: ssh, rsync, or cloud provider CLI commands
+          if [ -z "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" ]; then
+            echo "{}" > notification-service-d10e6-c3b98cba24f9.json
+            echo "Warning: FCM_SERVICE_ACCOUNT_JSON secret not set. Using empty JSON file."
+          else
+            echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > notification-service-d10e6-c3b98cba24f9.json
+          fi
+        shell: bash
+      
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+      
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
+          FCM_SERVICE_ACCOUNT_PATH: notification-service-d10e6-c3b98cba24f9.json
+        run: |
+          # Login to Railway
+          railway login --token $RAILWAY_TOKEN
+          
+          # Link to existing Railway project or create new one
+          if [ -n "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
+            railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+            echo "✅ Linked to existing Railway project: ${{ secrets.RAILWAY_PROJECT_ID }}"
+          else
+            echo "⚠️  RAILWAY_PROJECT_ID not set. Railway will use the project from .railway/ directory"
+            echo "   If this is the first deployment, you may need to run 'railway init' locally first"
+          fi
+          
+          # Set environment variables in Railway (project-level)
+          if [ -n "$FCM_PROJECT_ID" ]; then
+            railway variables set FCM_PROJECT_ID="$FCM_PROJECT_ID" || echo "⚠️  Could not set FCM_PROJECT_ID variable"
+          fi
+          
+          # Deploy to Railway
+          # Railway will detect docker-compose.yml and deploy all services
+          railway up --detach
+          
+          echo "✅ Deployment to Railway completed!"
+          echo "📊 Check your Railway dashboard for deployment status: https://railway.app"
+          echo "🔗 Service URLs will be available in the Railway dashboard after deployment"
 
