@@ -130,14 +130,18 @@ jobs:
           
           docker compose down
 
-  # Note: Deployment is handled by Railway's GitHub Integration
-  # After setting up Railway GitHub integration, deployments happen automatically
-  # on every push to main branch. No GitHub Actions deployment step needed.
-  
-  # To set up Railway GitHub Integration:
-  # 1. Go to railway.app → New Project
-  # 2. Select "Deploy from GitHub repo"
-  # 3. Choose this repository
-  # 4. Railway will auto-detect docker-compose.yml and deploy all services
-  # 5. Configure environment variables in Railway dashboard
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to server
+        run: |
+          echo "Deployment would happen here"
+          echo "Use /request-server command to get server details"
+          # Add your deployment script here
+          # Example: ssh, rsync, or cloud provider CLI commands
 
