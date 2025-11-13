@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    
     services:
       postgres:
         image: postgres:15-alpine
@@ -23,7 +23,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-
+      
       rabbitmq:
         image: rabbitmq:3-management-alpine
         options: >-
@@ -33,7 +33,7 @@ jobs:
           --health-retries 5
         ports:
           - 5672:5672
-
+      
       redis:
         image: redis:7-alpine
         options: >-
@@ -46,12 +46,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -61,7 +61,7 @@ jobs:
           pip install -r services/email_service/requirements.txt
           pip install -r services/push_service/requirements.txt
           pip install -r services/api_gateway/requirements.txt
-
+      
       - name: Run tests
         run: |
           pytest --cov=shared --cov=services --cov-report=xml || true
@@ -69,7 +69,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
           RABBITMQ_URL: amqp://guest:guest@localhost:5672/
           REDIS_URL: redis://localhost:6379/0
-
+      
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
@@ -79,59 +79,40 @@ jobs:
   build:
     needs: test
     runs-on: ubuntu-latest
-
+    
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Create Firebase service account JSON file dynamically from secret
-      - name: Create Firebase service account key
-        run: |
-          echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > fcm-service-account.json
-        shell: bash
-
+        uses: docker/setup-buildx-action@v2
+      
       - name: Build Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
-        run: docker compose build
-
-      - name: Test Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
         run: |
-          docker compose up -d
-
-          echo "Waiting for services to be healthy..."
-          for i in {1..30}; do
-            curl -f http://localhost:8000/health && \
-            curl -f http://localhost:8001/health && \
-            curl -f http://localhost:8002/health && \
-            curl -f http://localhost:8003/health && \
-            curl -f http://localhost:8004/health && break || echo "Retry $i..." && sleep 5
-          done
-
-          # Final check, will exit if any service fails
-          curl -f http://localhost:8000/health
-          curl -f http://localhost:8001/health
-          curl -f http://localhost:8002/health
-          curl -f http://localhost:8003/health
-          curl -f http://localhost:8004/health
-
-          docker compose down
+          docker-compose build
+      
+      - name: Test Docker images
+        run: |
+          docker-compose up -d
+          sleep 30
+          curl -f http://localhost:8000/health || exit 1
+          curl -f http://localhost:8001/health || exit 1
+          curl -f http://localhost:8002/health || exit 1
+          curl -f http://localhost:8003/health || exit 1
+          curl -f http://localhost:8004/health || exit 1
+          docker-compose down
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
+    
     steps:
       - uses: actions/checkout@v3
-
+      
       - name: Deploy to server
         run: |
           echo "Deployment would happen here"
+          echo "Use /request-server command to get server details"
+          # Add your deployment script here
           # Example: ssh, rsync, or cloud provider CLI commands
+
