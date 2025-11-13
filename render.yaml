@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: api-gateway
+    env: docker
+    dockerfilePath: services/api_gateway/Dockerfile
+    branch: main
+    plan: free
+    # Environment variables and secrets should be configured in Render's dashboard
+    envVars: []
