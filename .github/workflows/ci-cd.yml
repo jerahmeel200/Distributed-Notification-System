@@ -60,10 +60,10 @@ jobs:
           echo '${{ secrets.FIREBASE_CREDENTIALS_JSON }}' > notification-service-d10e6-c3b98cba24f9.json
 
       - name: Build Docker images
-        run: docker-compose build
+        run: docker compose build
 
       - name: Run services
-        run: docker-compose up -d
+        run: docker compose up -d
         env:
           FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
 
@@ -72,7 +72,7 @@ jobs:
           echo "Waiting for services..."
           sleep 30
           docker ps
-          docker-compose ps
+          docker compose ps
 
       - name: Test API Gateway health
         run: |
@@ -80,4 +80,4 @@ jobs:
 
       - name: Stop containers
         if: always()
-        run: docker-compose down
+        run: docker compose down
