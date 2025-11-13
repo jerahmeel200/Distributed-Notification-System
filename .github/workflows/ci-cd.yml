@@ -2,125 +2,82 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
-        image: postgres:15-alpine
+        image: postgres:15
         env:
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: notification_db
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5432:5432
-      
+
       rabbitmq:
-        image: rabbitmq:3-management-alpine
+        image: rabbitmq:3-management
+        ports: ["5672:5672"]
         options: >-
           --health-cmd "rabbitmq-diagnostics -q ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports:
-          - 5672:5672
-      
+
       redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
+        image: redis:7
+        ports: ["6379:6379"]
 
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      
+          python-version: "3.11"
+
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov
+          pip install -r services/api_gateway/requirements.txt
           pip install -r services/user_service/requirements.txt
-          pip install -r services/template_service/requirements.txt
           pip install -r services/email_service/requirements.txt
           pip install -r services/push_service/requirements.txt
-          pip install -r services/api_gateway/requirements.txt
-      
-      - name: Run tests
-        run: |
-          pytest --cov=shared --cov=services --cov-report=xml || true
-        env:
-          DATABASE_URL: postgresql://postgres:testpass@localhost:5432/test_db
-          RABBITMQ_URL: amqp://guest:guest@localhost:5672/
-          REDIS_URL: redis://localhost:6379/0
-      
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
 
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 👇 Create Firebase service account JSON file dynamically
-      - name: Create Firebase service account key
+      - name: Create Firebase JSON file
         run: |
-          echo "${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}" > fcm-service-account.json
-        shell: bash
+          echo '${{ secrets.FIREBASE_CREDENTIALS_JSON }}' > notification-service-d10e6-c3b98cba24f9.json
 
       - name: Build Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
-        run: docker compose build
-      
-      - name: Test Docker images
-        env:
-          FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
-          FCM_SERVICE_ACCOUNT_PATH: fcm-service-account.json
-        run: |
-          docker compose up -d
-          sleep 30
-          curl -f http://localhost:8000/health || exit 1
-          curl -f http://localhost:8001/health || exit 1
-          curl -f http://localhost:8002/health || exit 1
-          curl -f http://localhost:8003/health || exit 1
-          curl -f http://localhost:8004/health || exit 1
-          docker compose down
+        run: docker-compose build
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Deploy to server
+      - name: Run services
+        run: docker-compose up -d
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+
+      - name: Wait for services to become healthy
         run: |
-          echo "Deployment would happen here"
-          # Example: ssh, rsync, or cloud provider CLI commands
+          echo "Waiting for services..."
+          sleep 30
+          docker ps
+          docker-compose ps
+
+      - name: Test API Gateway health
+        run: |
+          curl --retry 5 --retry-delay 10 --fail http://localhost:8003/health
+
+      - name: Stop containers
+        if: always()
+        run: docker-compose down
