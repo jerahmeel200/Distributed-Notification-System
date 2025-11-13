@@ -28,7 +28,11 @@ class PushSender:
         # Initialize OAuth token if service account is provided
         self.access_token = None
         if self.fcm_service_account_path or self.fcm_service_account_json:
-            self._initialize_oauth_token()
+            try:
+                self._initialize_oauth_token()
+            except Exception as e:
+                # Log warning but don't fail - service can still run in mock mode
+                logger.warning(f"Failed to initialize FCM OAuth token: {e}. Push service will use mock mode.")
 
     def _initialize_oauth_token(self):
         """Initialize OAuth 2.0 access token for FCM HTTP v1 API"""
@@ -75,6 +79,9 @@ class PushSender:
             logger.info("FCM OAuth token initialized successfully")
         except ImportError:
             logger.error("google-auth library not installed. Install with: pip install google-auth google-auth-oauthlib")
+            raise
+        except FileNotFoundError:
+            # Re-raise FileNotFoundError so it can be caught and handled gracefully
             raise
         except Exception as e:
             logger.error(f"Failed to initialize FCM OAuth token: {e}")
