@@ -148,10 +148,14 @@ jobs:
           fi
         shell: bash
       
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
       - name: Install Railway CLI
         run: |
-          curl -fsSL https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+          npm install -g @railway/cli
       
       - name: Deploy to Railway
         env:
@@ -159,26 +163,58 @@ jobs:
           FCM_PROJECT_ID: ${{ secrets.FCM_PROJECT_ID }}
           FCM_SERVICE_ACCOUNT_PATH: notification-service-d10e6-c3b98cba24f9.json
         run: |
-          # Login to Railway
-          railway login --token $RAILWAY_TOKEN
-          
-          # Link to existing Railway project or create new one
-          if [ -n "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
-            railway link ${{ secrets.RAILWAY_PROJECT_ID }}
-            echo "✅ Linked to existing Railway project: ${{ secrets.RAILWAY_PROJECT_ID }}"
-          else
-            echo "⚠️  RAILWAY_PROJECT_ID not set. Railway will use the project from .railway/ directory"
-            echo "   If this is the first deployment, you may need to run 'railway init' locally first"
+          # Railway CLI automatically uses RAILWAY_TOKEN from environment
+          # Verify token is set
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "❌ Error: RAILWAY_TOKEN secret is not set!"
+            exit 1
           fi
+          
+          # Link to existing Railway project
+          if [ -n "${{ secrets.RAILWAY_PROJECT_ID }}" ]; then
+            echo "🔗 Linking to existing Railway project: ${{ secrets.RAILWAY_PROJECT_ID }}"
+            railway link ${{ secrets.RAILWAY_PROJECT_ID }} || {
+              echo "⚠️  Failed to link to project. Creating new project..."
+              railway init --name "notification-system" --yes || exit 1
+            }
+          else
+            echo "⚠️  RAILWAY_PROJECT_ID not set."
+            echo "📝 Creating new Railway project..."
+            # Check if .railway directory exists (from local init)
+            if [ -d ".railway" ]; then
+              echo "✅ Found .railway directory, using existing project"
+              railway link || railway status || {
+                echo "❌ Error: Could not link to Railway project"
+                echo "💡 Solution: Run 'railway init' locally and commit the .railway directory"
+                exit 1
+              }
+            else
+              echo "❌ Error: No .railway directory found and RAILWAY_PROJECT_ID not set"
+              echo "💡 Solution 1: Set RAILWAY_PROJECT_ID secret with your project ID"
+              echo "💡 Solution 2: Run 'railway init' locally and commit the .railway directory"
+              exit 1
+            fi
+          fi
+          
+          # Verify we're linked to a project
+          echo "🔍 Verifying Railway project connection..."
+          railway status || {
+            echo "❌ Error: Not connected to a Railway project"
+            exit 1
+          }
           
           # Set environment variables in Railway (project-level)
           if [ -n "$FCM_PROJECT_ID" ]; then
+            echo "🔧 Setting FCM_PROJECT_ID environment variable..."
             railway variables set FCM_PROJECT_ID="$FCM_PROJECT_ID" || echo "⚠️  Could not set FCM_PROJECT_ID variable"
           fi
           
           # Deploy to Railway
-          # Railway will detect docker-compose.yml and deploy all services
-          railway up --detach
+          echo "🚀 Deploying to Railway..."
+          railway up --detach || {
+            echo "❌ Error: Deployment failed"
+            exit 1
+          }
           
           echo "✅ Deployment to Railway completed!"
           echo "📊 Check your Railway dashboard for deployment status: https://railway.app"
