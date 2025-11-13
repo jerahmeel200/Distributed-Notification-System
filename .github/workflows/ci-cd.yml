@@ -137,26 +137,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
-      - name: Install Railway CLI
-        shell: bash
+      
+      - name: Deploy to server
         run: |
-          curl -fsSL https://railway.app/install.sh | sh
-          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
-
-      - name: Deploy services to Railway
-        shell: bash
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_API_GATEWAY_SERVICE_ID: ${{ secrets.RAILWAY_API_GATEWAY_SERVICE_ID }}
-          RAILWAY_USER_SERVICE_ID: ${{ secrets.RAILWAY_USER_SERVICE_ID }}
-          RAILWAY_TEMPLATE_SERVICE_ID: ${{ secrets.RAILWAY_TEMPLATE_SERVICE_ID }}
-          RAILWAY_EMAIL_SERVICE_ID: ${{ secrets.RAILWAY_EMAIL_SERVICE_ID }}
-          RAILWAY_PUSH_SERVICE_ID: ${{ secrets.RAILWAY_PUSH_SERVICE_ID }}
-          RAILWAY_USER_DB_SERVICE_ID: ${{ secrets.RAILWAY_USER_DB_SERVICE_ID }}
-          RAILWAY_TEMPLATE_DB_SERVICE_ID: ${{ secrets.RAILWAY_TEMPLATE_DB_SERVICE_ID }}
-          RAILWAY_RABBITMQ_SERVICE_ID: ${{ secrets.RAILWAY_RABBITMQ_SERVICE_ID }}
-          RAILWAY_REDIS_SERVICE_ID: ${{ secrets.RAILWAY_REDIS_SERVICE_ID }}
-        run: |
-          chmod +x scripts/railway_deploy.sh
-          scripts/railway_deploy.sh
+          echo "Deployment would happen here"
+          echo "Use /request-server command to get server details"
+          # Add your deployment script here
+          # Example: ssh, rsync, or cloud provider CLI commands
 
