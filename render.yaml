@@ -1,9 +1,177 @@
 services:
+  # API Gateway
   - type: web
     name: api-gateway
     env: docker
     dockerfilePath: services/api_gateway/Dockerfile
+    dockerContext: .
     branch: main
     plan: free
-    # Environment variables and secrets should be configured in Render's dashboard
-    envVars: []
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: user-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
+      - key: RABBITMQ_URL
+        sync: false
+        # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
+        # Set this manually in Render dashboard after RabbitMQ service is deployed
+      - key: USER_SERVICE_URL
+        sync: false
+        # Set manually: https://user-service.onrender.com (or your custom domain)
+      - key: TEMPLATE_SERVICE_URL
+        sync: false
+        # Set manually: https://template-service.onrender.com (or your custom domain)
+      - key: JWT_SECRET
+        sync: false
+      - key: SERVICE_TOKEN
+        sync: false
+
+  # User Service
+  - type: web
+    name: user-service
+    env: docker
+    dockerfilePath: services/user_service/Dockerfile
+    dockerContext: .
+    branch: main
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: user-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
+      - key: RABBITMQ_URL
+        sync: false
+        # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
+        # Set this manually in Render dashboard after RabbitMQ service is deployed
+      - key: JWT_SECRET
+        sync: false
+
+  # Template Service
+  - type: web
+    name: template-service
+    env: docker
+    dockerfilePath: services/template_service/Dockerfile
+    dockerContext: .
+    branch: main
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: template-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
+
+  # Email Service
+  - type: web
+    name: email-service
+    env: docker
+    dockerfilePath: services/email_service/Dockerfile
+    dockerContext: .
+    branch: main
+    plan: free
+    envVars:
+      - key: RABBITMQ_URL
+        sync: false
+        # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
+        # Set this manually in Render dashboard after RabbitMQ service is deployed
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
+      - key: TEMPLATE_SERVICE_URL
+        sync: false
+        # Set manually: https://template-service.onrender.com (or your custom domain)
+      - key: USER_SERVICE_URL
+        sync: false
+        # Set manually: https://user-service.onrender.com (or your custom domain)
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.sendgrid.net
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        value: apikey
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+
+  # Push Service
+  - type: web
+    name: push-service
+    env: docker
+    dockerfilePath: services/push_service/Dockerfile
+    dockerContext: .
+    branch: main
+    plan: free
+    envVars:
+      - key: RABBITMQ_URL
+        sync: false
+        # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
+        # Set this manually in Render dashboard after RabbitMQ service is deployed
+      - key: REDIS_URL
+        fromService:
+          name: redis
+          type: redis
+          property: connectionString
+      - key: TEMPLATE_SERVICE_URL
+        sync: false
+        # Set manually: https://template-service.onrender.com (or your custom domain)
+      - key: USER_SERVICE_URL
+        sync: false
+        # Set manually: https://user-service.onrender.com (or your custom domain)
+      - key: FCM_PROJECT_ID
+        sync: false
+      - key: FCM_SERVICE_ACCOUNT_PATH
+        value: /app/notification-service-d10e6-c3b98cba24f9.json
+
+  # Databases
+  - type: pgsql
+    name: user-db
+    plan: free
+    databaseName: user_db
+    user: user_service
+
+  - type: pgsql
+    name: template-db
+    plan: free
+    databaseName: template_db
+    user: template_service
+
+  # Redis
+  - type: redis
+    name: redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
+  # RabbitMQ as Web Service (Render doesn't have managed RabbitMQ)
+  # Using web service type to keep it always running
+  - type: web
+    name: rabbitmq
+    env: docker
+    dockerfilePath: Dockerfile.rabbitmq
+    dockerContext: .
+    branch: main
+    plan: free
+    envVars:
+      - key: RABBITMQ_DEFAULT_USER
+        value: guest
+      - key: RABBITMQ_DEFAULT_PASS
+        sync: false

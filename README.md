@@ -50,19 +50,24 @@ python scripts/init_templates.py
 For detailed instructions, see:
 - **[QUICKSTART.md](QUICKSTART.md)** - Complete quick start guide
 - **[SETUP.md](SETUP.md)** - Detailed setup instructions
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment and testing guide
+- **[DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)** - Deployment overview and recommendations
 
 ## Documentation
 
 - **🚀 Quick Start**: See `QUICKSTART.md` - Get running in minutes!
 - **Quick Setup**: See `SETUP.md` for basic setup instructions
+- **🚀 Deployment**: 
+  - **[DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)** - Overview and quick recommendations
+  - **[DEPLOYMENT_QUICK_START.md](DEPLOYMENT_QUICK_START.md)** - Fastest deployment options (10-30 min)
+  - **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Comprehensive guide with 7 deployment options:
+    - **⭐ Render.com (Recommended)** - Quick deployments with managed infrastructure
+    - Docker Compose (Single Server)
+    - Railway
+    - AWS (ECS/Fargate)
+    - Google Cloud Platform
+    - Kubernetes (Production)
+    - DigitalOcean App Platform
 - **FCM Migration**: See `docs/FCM_MIGRATION.md` - Migrate from Legacy to HTTP v1 API
-- **Complete Guide**: See `DEPLOYMENT.md` for detailed instructions on:
-  - Starting the project
-  - Testing (manual and automated)
-  - Deployment (Docker, Cloud, Kubernetes)
-  - Troubleshooting
-  - Production checklist
 
 ## API Endpoints
 
@@ -101,12 +106,28 @@ uvicorn main:app --reload --port 8000
 pytest
 ```
 
+## Deployment
+
+**🚀 Recommended: Deploy to Render.com**
+
+The easiest way to deploy is using Render's Blueprint feature with the provided `render.yaml`:
+
+1. Sign up at [render.com](https://render.com)
+2. Connect your GitHub repository
+3. Create a new Blueprint and select `render.yaml`
+4. Configure environment variables (see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md))
+5. Deploy!
+
+See **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** for complete instructions.
+
 ## CI/CD
 
 GitHub Actions workflows are configured in `.github/workflows/`. The pipeline:
 1. Runs tests
 2. Builds Docker images
 3. Deploys to server (when using `/request-server`)
+
+Render also supports automatic deployments from Git - just connect your repository!
 
 ## System Design
 
