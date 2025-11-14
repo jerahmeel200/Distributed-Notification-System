@@ -143,13 +143,13 @@ services:
         value: /app/notification-service-d10e6-c3b98cba24f9.json
 
   # Databases
-  - type: pgsql
+  - type: postgres
     name: user-db
     plan: free
     databaseName: user_db
     user: user_service
 
-  - type: pgsql
+  - type: postgres
     name: template-db
     plan: free
     databaseName: template_db
