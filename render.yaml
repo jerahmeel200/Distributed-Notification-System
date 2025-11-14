@@ -1,3 +1,20 @@
+# Databases
+# PostgreSQL and Redis databases
+databases:
+  - name: user-db
+    plan: free
+    databaseName: user_db
+    user: user_service
+
+  - name: template-db
+    plan: free
+    databaseName: template_db
+    user: template_service
+
+  - name: redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
 services:
   # API Gateway
   - type: web
@@ -13,9 +30,8 @@ services:
           name: user-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
+        fromDatabase:
           name: redis
-          type: redis
           property: connectionString
       - key: RABBITMQ_URL
         sync: false
@@ -46,9 +62,8 @@ services:
           name: user-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
+        fromDatabase:
           name: redis
-          type: redis
           property: connectionString
       - key: RABBITMQ_URL
         sync: false
@@ -71,9 +86,8 @@ services:
           name: template-db
           property: connectionString
       - key: REDIS_URL
-        fromService:
+        fromDatabase:
           name: redis
-          type: redis
           property: connectionString
 
   # Email Service
@@ -90,9 +104,8 @@ services:
         # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
         # Set this manually in Render dashboard after RabbitMQ service is deployed
       - key: REDIS_URL
-        fromService:
+        fromDatabase:
           name: redis
-          type: redis
           property: connectionString
       - key: TEMPLATE_SERVICE_URL
         sync: false
@@ -127,9 +140,8 @@ services:
         # Format: amqp://guest:<RABBITMQ_DEFAULT_PASS>@<rabbitmq-service-hostname>:5672/
         # Set this manually in Render dashboard after RabbitMQ service is deployed
       - key: REDIS_URL
-        fromService:
+        fromDatabase:
           name: redis
-          type: redis
           property: connectionString
       - key: TEMPLATE_SERVICE_URL
         sync: false
@@ -142,24 +154,6 @@ services:
       - key: FCM_SERVICE_ACCOUNT_PATH
         value: /app/notification-service-d10e6-c3b98cba24f9.json
 
-  # Databases
-  - type: postgres
-    name: user-db
-    plan: free
-    databaseName: user_db
-    user: user_service
-
-  - type: postgres
-    name: template-db
-    plan: free
-    databaseName: template_db
-    user: template_service
-
-  # Redis
-  - type: redis
-    name: redis
-    plan: free
-    maxmemoryPolicy: allkeys-lru
 
   # RabbitMQ as Web Service (Render doesn't have managed RabbitMQ)
   # Using web service type to keep it always running
